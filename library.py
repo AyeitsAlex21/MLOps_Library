@@ -107,3 +107,36 @@ class CustomOHETransformer(BaseEstimator, TransformerMixin):
     #self.fit(X,y)
     result = self.transform(X)
     return result
+
+
+class CustomPearsonTransformer(BaseEstimator, TransformerMixin):
+  def __init__(self, threshold):
+    self.threshold = threshold
+    self.correlated_columns = None
+    self.transformed = False
+
+  #define methods below
+  def fit(self, X, y = None):
+    self.X = X.corr(method='pearson')
+    self.X = self.X.abs() > self.threshold
+
+    np.fill_diagonal(self.X.values, False)
+    for i in range(len(self.X)):
+        for j in range(i):
+            self.X.iat[i, j] = False
+
+    self.correlated_columns = [col for col in self.X.columns if any(self.X[col])]
+
+    self.transformed = True
+
+    return self
+
+  def transform(self, X):
+    assert self.transformed, f'NotFittedError: This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.'
+
+    return X.drop(columns=self.correlated_columns)
+
+
+  def fit_transform(self, X, y = None):
+    self.fit(X, y)
+    return self.transform(X)
