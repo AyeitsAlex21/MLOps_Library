@@ -180,3 +180,54 @@ class CustomSigma3Transformer(BaseEstimator, TransformerMixin):
   def fit_transform(self, X, y = None):
     self.fit(X, y)
     return self.transform(X)
+
+
+
+class CustomTukeyTransformer(BaseEstimator, TransformerMixin):
+  def __init__(self, target_column, fence='outer'):
+    assert fence in ['inner', 'outer']
+
+    self.fence = fence
+    self.targ_col = target_column
+    self.fitted = False
+
+    self.fence_left = 0
+    self.fence_right = 0
+  
+  def fit(self, X, y = None):
+    assert isinstance(X, pd.core.frame.DataFrame), f'expected Dataframe but got {type(X)} instead.'
+    assert self.targ_col in X.columns, f'Column Error: Target Column "{self.targ_col}" not present in given dataframe.'
+
+    inner_left = q1 = X[self.targ_col].quantile(0.25)
+    inner_right = q3 = X[self.targ_col].quantile(0.75)
+    iqr = q3-q1
+
+    inner_left = q1-1.5*iqr
+    inner_right = q3+1.5*iqr
+    outer_left = q1-3*iqr
+    outer_right = q3+3*iqr
+
+    if self.fence == 'inner':
+      self.fence_left = inner_left
+      self.fence_right = inner_right
+    
+    elif self.fence == 'outer':
+      self.fence_left = outer_left
+      self.fence_right = outer_right
+    
+    self.fitted = True
+    return self
+
+
+  def transform(self, X):
+    assert self.fitted , f'NotFittedError: This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.'
+
+    copy = X.copy()
+    copy[self.targ_col] = copy[self.targ_col].clip(lower=self.fence_left, upper=self.fence_right)
+    copy.reset_index(inplace=True, drop=True)
+
+    return copy
+
+  def fit_transform(self, X, y = None):
+    self.fit(X, y)
+    return self.transform(X)
