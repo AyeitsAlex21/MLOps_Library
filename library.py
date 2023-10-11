@@ -140,3 +140,43 @@ class CustomPearsonTransformer(BaseEstimator, TransformerMixin):
   def fit_transform(self, X, y = None):
     self.fit(X, y)
     return self.transform(X)
+
+class CustomSigma3Transformer(BaseEstimator, TransformerMixin):
+  def __init__(self, target_column):
+    self.targ_col = target_column
+    self.fitted = False
+    self.left = 0
+    self.right = 0
+    self.min = 0
+    self.max = 0
+
+  #define methods below
+  def fit(self, X, y = None):
+    assert isinstance(X, pd.core.frame.DataFrame), f'expected Dataframe but got {type(X)} instead.'
+    assert self.targ_col in X.columns, f'Column Error: Target Column "{self.targ_col}" not present in given dataframe.'
+
+    self.mean = X[self.targ_col].mean()
+    self.sigma = X[self.targ_col].std()
+
+    self.left = self.mean - (3 * self.sigma)
+    self.right = self.mean + (3 * self.sigma)
+
+    self.min = X[self.targ_col].max()
+    self.max = X[self.targ_col].min()
+
+    self.fitted = True
+
+    return self
+
+  def transform(self, X):
+    assert self.fitted , f'NotFittedError: This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.'
+
+    copy = X.copy()
+    copy[self.targ_col] = copy[self.targ_col].clip(lower=self.left, upper=self.right)
+    copy.reset_index(inplace=True, drop=True)
+
+    return copy
+
+  def fit_transform(self, X, y = None):
+    self.fit(X, y)
+    return self.transform(X)
