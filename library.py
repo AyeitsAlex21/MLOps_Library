@@ -5,6 +5,36 @@ sklearn.set_config(transform_output="pandas")  #says pass pandas tables through 
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
 
+class CustomRenamingTransformer(BaseEstimator, TransformerMixin):
+  #your __init__ method below
+
+  def __init__(self, mapping_dict:dict):
+    assert isinstance(mapping_dict, dict), f'{self.__class__.__name__} constructor expected dictionary but got {type(mapping_dict)} instead.'
+    self.mapping_dict = mapping_dict
+
+  #define fit to do nothing but give warning
+  def fit(self, X, y = None):
+    print(f"\nWarning: {self.__class__.__name__}.fit does nothing.\n")
+    return self
+
+  #write the transform method with asserts. Again, maybe copy and paste from MappingTransformer and fix up.
+  def transform(self, X):
+    assert isinstance(X, pd.core.frame.DataFrame), f'RenamingTransformer.transform expected Dataframe but got {type(X)} instead.'
+    #your assert code below
+
+    column_set = set(X.columns)
+    not_found = set(self.mapping_dict.keys()) - column_set
+    assert not not_found, f"Columns {not_found}, are not in the data table"
+
+    X_ = X.copy()
+    return X_.rename(columns=self.mapping_dict)
+
+  #write fit_transform that skips fit
+  def fit_transform(self, X, y = None):
+    #self.fit(X,y)  #no need for fit method
+    result = self.transform(X)
+    return result
+
 
 class CustomMappingTransformer(BaseEstimator, TransformerMixin):
 
@@ -45,6 +75,32 @@ class CustomMappingTransformer(BaseEstimator, TransformerMixin):
     #do actual mapping
     X_ = X.copy()
     X_[self.mapping_column].replace(self.mapping_dict, inplace=True)
+    return X_
+
+  def fit_transform(self, X, y = None):
+    #self.fit(X,y)
+    result = self.transform(X)
+    return result
+
+
+class CustomOHETransformer(BaseEstimator, TransformerMixin):
+  def __init__(self, target_column, dummy_na=False, drop_first=False):
+    self.target_column = target_column
+    self.dummy_na = dummy_na
+    self.drop_first = drop_first
+
+  #fill in the rest below
+  def fit(self, X, y = None):
+    print(f"Warning: {self.__class__.__name__}.fit does nothing.")
+    return self
+
+  def transform(self, X):
+    assert isinstance(X, pd.core.frame.DataFrame), f'{self.__class__.__name__}.transform expected Dataframe but got {type(X)} instead.'
+    assert self.target_column in X.columns.to_list(), f'{self.__class__.__name__}.transform unknown column {self.target_column}'
+    X_ = X.copy()
+    X_ = pd.get_dummies(X_, columns=[self.target_column],
+                        dummy_na=self.dummy_na,
+                        drop_first = self.drop_first)
     return X_
 
   def fit_transform(self, X, y = None):
