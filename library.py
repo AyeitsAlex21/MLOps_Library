@@ -231,3 +231,35 @@ class CustomTukeyTransformer(BaseEstimator, TransformerMixin):
   def fit_transform(self, X, y = None):
     self.fit(X, y)
     return self.transform(X)
+
+
+class CustomRobustTransformer(BaseEstimator, TransformerMixin):
+  def __init__(self, column):
+    #fill in rest below
+    self.col = column
+    self.fitted = False
+    self.med = 0
+    self.iqr = 0
+  
+  def fit(self, X, y = None):
+    assert isinstance(X, pd.core.frame.DataFrame), f'expected Dataframe but got {type(X)} instead.'
+    assert self.col in X.columns, f'Column Error: Target Column "{self.col}" not present in given dataframe.'
+
+    self.iqr = X[self.col].quantile(.75) - X[self.col].quantile(.25)
+    self.med = X[self.col].median()
+
+    self.fitted = True
+    return self
+
+  def transform(self, X):
+    assert self.fitted , f'NotFittedError: This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.'
+
+    copy = X.copy()
+    copy[self.col] -= med
+    copy[self.col] /= iqr
+
+    return copy
+
+  def fit_transform(self, X, y = None):
+    self.fit(X, y)
+    return self.transform(X)
