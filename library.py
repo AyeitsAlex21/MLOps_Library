@@ -171,7 +171,8 @@ class CustomPearsonTransformer(BaseEstimator, TransformerMixin):
   def transform(self, X):
     assert self.transformed, f'NotFittedError: This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.'
 
-    return X.drop(columns=self.correlated_columns)
+    copy = X.copy()
+    return copy.drop(columns=self.correlated_columns)
 
 
   def fit_transform(self, X, y = None):
