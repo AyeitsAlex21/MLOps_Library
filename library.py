@@ -238,7 +238,7 @@ class CustomRobustTransformer(BaseEstimator, TransformerMixin):
     self.fitted = False
     self.med = 0
     self.iqr = 0
-  
+
   def fit(self, X, y = None):
     assert isinstance(X, pd.core.frame.DataFrame), f'expected Dataframe but got {type(X)} instead.'
     assert self.col in X.columns, f'Column Error: Target Column "{self.col}" not present in given dataframe.'
@@ -253,8 +253,8 @@ class CustomRobustTransformer(BaseEstimator, TransformerMixin):
     assert self.fitted , f'NotFittedError: This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.'
 
     copy = X.copy()
-    copy[self.col] -= med
-    copy[self.col] /= iqr
+    copy[self.col] -= self.med
+    copy[self.col] /= self.iqr
 
     return copy
 
