@@ -5,6 +5,10 @@ sklearn.set_config(transform_output="pandas")  #says pass pandas tables through 
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
 from sklearn.impute import KNNImputer
+import subprocess
+import sys
+subprocess.call([sys.executable, '-m', 'pip', 'install', 'category_encoders'])  #replaces !pip install
+import category_encoders as ce
 
 class CustomRenamingTransformer(BaseEstimator, TransformerMixin):
   #your __init__ method below
@@ -262,3 +266,6 @@ class CustomRobustTransformer(BaseEstimator, TransformerMixin):
   def fit_transform(self, X, y = None):
     self.fit(X, y)
     return self.transform(X)
+
+
+
