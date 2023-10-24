@@ -14,6 +14,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 import matplotlib.pyplot as plt
 
+titanic_variance_based_split = 107
+customer_variance_based_split = 113
 
 class CustomRenamingTransformer(BaseEstimator, TransformerMixin):
   #your __init__ method below
