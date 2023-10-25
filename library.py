@@ -281,6 +281,7 @@ def find_random_state(features_df, labels, n=200):
   for i in range(1, n):
     train_X, test_X, train_y, test_y = train_test_split(features_df, labels, test_size=0.2, shuffle=True,
                                                     random_state=i, stratify=labels)
+    model = KNeighborsClassifier(n_neighbors=5)
     model.fit(train_X, train_y)  #train model
     train_pred = model.predict(train_X)           #predict against training set
     test_pred = model.predict(test_X)             #predict against test set
