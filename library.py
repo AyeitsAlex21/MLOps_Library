@@ -196,37 +196,43 @@ class CustomPearsonTransformer(BaseEstimator, TransformerMixin):
 class CustomTukeyTransformer(BaseEstimator, TransformerMixin):
   def __init__(self, target_column, fence='outer'):
     assert fence in ['inner', 'outer']
-
+    self.target_column = target_column
     self.fence = fence
-    self.targ_col = target_column
-    self.fitted = False
+    self.inner_low = None
+    self.outer_low = None
+    self.inner_high = None
+    self.outer_high = None
 
-    self.fence_left = 0
-    self.fence_right = 0
-  
   def fit(self, X, y = None):
-    assert isinstance(X, pd.core.frame.DataFrame), f'expected Dataframe but got {type(X)} instead.'
-    assert self.targ_col in X.columns, f'Column Error: Target Column "{self.targ_col}" not present in given dataframe.'
-
-    inner_left = q1 = X[self.targ_col].quantile(0.25)
-    inner_right = q3 = X[self.targ_col].quantile(0.75)
+    assert isinstance(X, pd.core.frame.DataFrame), f'{self.__class__.__name__}.fit expected Dataframe but got {type(X)} instead.'
+    assert self.target_column in X.columns.to_list(), f'{self.__class__.__name__}.fit unrecognizable column {self.target_column}.'
+    q1 = X[self.target_column].quantile(0.25)
+    q3 = X[self.target_column].quantile(0.75)
     iqr = q3-q1
-
-    inner_left = q1-1.5*iqr
-    inner_right = q3+1.5*iqr
-    outer_left = q1-3*iqr
-    outer_right = q3+3*iqr
-
-    if self.fence == 'inner':
-      self.fence_left = inner_left
-      self.fence_right = inner_right
-    
-    elif self.fence == 'outer':
-      self.fence_left = outer_left
-      self.fence_right = outer_right
-    
-    self.fitted = True
+    self.inner_low = q1-1.5*iqr
+    self.outer_low = q1-3.0*iqr
+    self.inner_high = q3+1.5*iqr
+    self.outer_high = q3+3.0*iqr
     return self
+
+  def transform(self, X):
+    assert isinstance(X, pd.core.frame.DataFrame), f'{self.__class__.__name__}.transform expected Dataframe but got {type(X)} instead.'
+    assert isinstance(self.inner_low, float), f'{self.__class__.__name__}.transform appears no fit was called prior.'
+    assert self.target_column in X.columns.to_list(), f'{self.__class__.__name__}.transform unrecognizable column {self.target_column}.'
+
+    X_ = X.copy()
+    if self.fence=='inner':
+      X_[self.target_column] = X_[self.target_column].clip(lower=self.inner_low, upper=self.inner_high)
+    elif self.fence=='outer':
+      X_[self.target_column] = X_[self.target_column].clip(lower=self.outer_low, upper=self.outer_high)
+    else:
+      assert False, f"fence has unrecognized value {self.fence}"
+    return X_
+
+  def fit_transform(self, X, y = None):
+    self.fit(X,y)
+    result = self.transform(X)
+    return result
 
 
   def transform(self, X):
