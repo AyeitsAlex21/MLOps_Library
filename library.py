@@ -194,72 +194,82 @@ class CustomPearsonTransformer(BaseEstimator, TransformerMixin):
 class CustomTukeyTransformer(BaseEstimator, TransformerMixin):
   def __init__(self, target_column, fence='outer'):
     assert fence in ['inner', 'outer']
-    self.target_column = target_column
-    self.fence = fence
-    self.inner_low = None
-    self.outer_low = None
-    self.inner_high = None
-    self.outer_high = None
 
+    self.fence = fence
+    self.targ_col = target_column
+    self.fitted = False
+
+    self.fence_left = 0
+    self.fence_right = 0
+  
   def fit(self, X, y = None):
-    assert isinstance(X, pd.core.frame.DataFrame), f'{self.__class__.__name__}.fit expected Dataframe but got {type(X)} instead.'
-    assert self.target_column in X.columns.to_list(), f'{self.__class__.__name__}.fit unrecognizable column {self.target_column}.'
-    q1 = X[self.target_column].quantile(0.25)
-    q3 = X[self.target_column].quantile(0.75)
+    assert isinstance(X, pd.core.frame.DataFrame), f'expected Dataframe but got {type(X)} instead.'
+    assert self.targ_col in X.columns, f'Column Error: Target Column "{self.targ_col}" not present in given dataframe.'
+
+    inner_left = q1 = X[self.targ_col].quantile(0.25)
+    inner_right = q3 = X[self.targ_col].quantile(0.75)
     iqr = q3-q1
-    self.inner_low = q1-1.5*iqr
-    self.outer_low = q1-3.0*iqr
-    self.inner_high = q3+1.5*iqr
-    self.outer_high = q3+3.0*iqr
+
+    inner_left = q1-1.5*iqr
+    inner_right = q3+1.5*iqr
+    outer_left = q1-3*iqr
+    outer_right = q3+3*iqr
+
+    if self.fence == 'inner':
+      self.fence_left = inner_left
+      self.fence_right = inner_right
+    
+    elif self.fence == 'outer':
+      self.fence_left = outer_left
+      self.fence_right = outer_right
+    
+    self.fitted = True
     return self
 
-  def transform(self, X):
-    assert isinstance(X, pd.core.frame.DataFrame), f'{self.__class__.__name__}.transform expected Dataframe but got {type(X)} instead.'
-    assert isinstance(self.inner_low, float), f'{self.__class__.__name__}.transform appears no fit was called prior.'
-    assert self.target_column in X.columns.to_list(), f'{self.__class__.__name__}.transform unrecognizable column {self.target_column}.'
 
-    X_ = X.copy()
-    if self.fence=='inner':
-      X_[self.target_column] = X_[self.target_column].clip(lower=self.inner_low, upper=self.inner_high)
-    elif self.fence=='outer':
-      X_[self.target_column] = X_[self.target_column].clip(lower=self.outer_low, upper=self.outer_high)
-    else:
-      assert False, f"fence has unrecognized value {self.fence}"
-    return X_
+  def transform(self, X):
+    assert self.fitted , f'NotFittedError: This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.'
+
+    copy = X.copy()
+    copy[self.targ_col] = copy[self.targ_col].clip(lower=self.fence_left, upper=self.fence_right)
+    copy.reset_index(inplace=True, drop=True)
+
+    return copy
 
   def fit_transform(self, X, y = None):
-    self.fit(X,y)
-    result = self.transform(X)
-    return result
+    self.fit(X, y)
+    return self.transform(X)
 
 class CustomRobustTransformer(BaseEstimator, TransformerMixin):
   def __init__(self, column):
     #fill in rest below
-    self.target_column = column
-    self.iqr = None
-    self.med = None
+    self.col = column
+    self.fitted = False
+    self.med = 0
+    self.iqr = 0
 
   def fit(self, X, y = None):
-    assert isinstance(X, pd.core.frame.DataFrame), f'{self.__class__.__name__}.fit expected Dataframe but got {type(X)} instead.'
-    assert self.target_column in X.columns.to_list(), f'{self.__class__.__name__}.fit unrecognizable column {self.target_column}.'
-    self.iqr = float(X[self.target_column].quantile(.75) - X[self.target_column].quantile(.25))
-    self.med = X[self.target_column].median()
+    assert isinstance(X, pd.core.frame.DataFrame), f'expected Dataframe but got {type(X)} instead.'
+    assert self.col in X.columns, f'Column Error: Target Column "{self.col}" not present in given dataframe.'
+
+    self.iqr = float(X[self.col].quantile(.75) - X[self.col].quantile(.25))
+    self.med = X[self.col].median()
+
+    self.fitted = True
     return self
 
   def transform(self, X):
-    assert isinstance(X, pd.core.frame.DataFrame), f'{self.__class__.__name__}.transform expected Dataframe but got {type(X)} instead.'
-    assert isinstance(self.iqr, float), f'NotFittedError: This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.'
-    assert self.target_column in X.columns.to_list(), f'{self.__class__.__name__}.transform unrecognizable column {self.target_column}.'
+    assert self.fitted , f'NotFittedError: This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.'
 
-    X_ = X.copy()
-    X_[self.target_column] -= self.med
-    X_[self.target_column] /= self.iqr
-    return X_
+    copy = X.copy()
+    copy[self.col] -= self.med
+    copy[self.col] /= self.iqr
+
+    return copy
 
   def fit_transform(self, X, y = None):
-    self.fit(X,y)
-    result = self.transform(X)
-    return result
+    self.fit(X, y)
+    return self.transform(X)
 
 def find_random_state(features_df, labels, n=200):
   var = []  #collect test_error/train_error where error based on F1 score
