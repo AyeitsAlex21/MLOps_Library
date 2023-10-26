@@ -232,7 +232,7 @@ class CustomTukeyTransformer(BaseEstimator, TransformerMixin):
 
     copy = X.copy()
     copy[self.targ_col] = copy[self.targ_col].clip(lower=self.fence_left, upper=self.fence_right)
-    copy.reset_index(inplace=True, drop=True)
+    #copy.reset_index(inplace=True, drop=True)
 
     return copy
 
