@@ -235,20 +235,6 @@ class CustomTukeyTransformer(BaseEstimator, TransformerMixin):
     return result
 
 
-  def transform(self, X):
-    assert self.fitted , f'NotFittedError: This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.'
-
-    copy = X.copy()
-    copy[self.targ_col] = copy[self.targ_col].clip(lower=self.fence_left, upper=self.fence_right)
-    copy.reset_index(inplace=True, drop=True)
-
-    return copy
-
-  def fit_transform(self, X, y = None):
-    self.fit(X, y)
-    return self.transform(X)
-
-
 class CustomRobustTransformer(BaseEstimator, TransformerMixin):
   def __init__(self, column):
     #fill in rest below
