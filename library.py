@@ -255,7 +255,7 @@ class CustomRobustTransformer(BaseEstimator, TransformerMixin):
     assert isinstance(X, pd.core.frame.DataFrame), f'expected Dataframe but got {type(X)} instead.'
     assert self.col in X.columns, f'Column Error: Target Column "{self.col}" not present in given dataframe.'
 
-    self.iqr = X[self.col].quantile(.75) - X[self.col].quantile(.25)
+    self.iqr = float(X[self.col].quantile(.75) - X[self.col].quantile(.25))
     self.med = X[self.col].median()
 
     self.fitted = True
@@ -318,8 +318,8 @@ customer_transformer = Pipeline(steps=[
     ('map_gender', CustomMappingTransformer('Gender', {'Male': 0, 'Female': 1})),
     ('tukey_age', CustomTukeyTransformer('Age', 'inner')),  #from chapter 4
     ('tukey_time spent', CustomTukeyTransformer('Time Spent', 'inner')),  #from chapter 4
-    ('scale_age', CustomRobustTransformer('Age')), #from 5
-    ('scale_time spent', CustomRobustTransformer('Time Spent')), #from 5
+    ('scale_age', Transformer('Age')), #from 5
+    ('scale_time spent', Transformer('Time Spent')), #from 5
     ('impute', KNNImputer(n_neighbors=5, weights="uniform", add_indicator=False)),
     ], verbose=True)
 
