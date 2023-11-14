@@ -14,6 +14,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 import matplotlib.pyplot as plt
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score
+from sklearn.experimental import enable_halving_search_cv
+from sklearn.model_selection import HalvingGridSearchCV
 
 titanic_variance_based_split = 107
 customer_variance_based_split = 113
