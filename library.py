@@ -247,7 +247,6 @@ class CustomRobustTransformer(BaseEstimator, TransformerMixin):
   def __init__(self, column):
     #fill in rest below
     self.col = column
-    self.fitted = False
     self.med = 0
     self.iqr = 0
 
@@ -255,24 +254,25 @@ class CustomRobustTransformer(BaseEstimator, TransformerMixin):
     assert isinstance(X, pd.core.frame.DataFrame), f'expected Dataframe but got {type(X)} instead.'
     assert self.col in X.columns, f'Column Error: Target Column "{self.col}" not present in given dataframe.'
 
-    self.iqr = float(X[self.col].quantile(.75) - X[self.col].quantile(.25))
-    self.med = X[self.col].median()
-
-    self.fitted = True
+    self.iqr = float(X[self.target_column].quantile(.75) - X[self.target_column].quantile(.25))
+    self.med = X[self.target_column].median()
     return self
 
   def transform(self, X):
-    assert self.fitted , f'NotFittedError: This {self.__class__.__name__} instance is not fitted yet. Call "fit" with appropriate arguments before using this estimator.'
-
+    assert isinstance(X, pd.core.frame.DataFrame), f'{self.__class__.__name__}.transform expected Dataframe but got {type(X)} instead.'
+    assert isinstance(self.iqr, float), f'NotFittedError: This {self.__class__.__name__} Not fitted yet. Use fit before using transform.'
+    assert self.target_column in X.columns.to_list(), f'{self.__class__.__name__}. column not in DataFrame {self.target_column}.'
+    
     copy = X.copy()
-    copy[self.col] -= self.med
-    copy[self.col] /= self.iqr
+    copy[self.target_column] -= self.med
+    copy[self.target_column] /= self.iqr
 
     return copy
 
   def fit_transform(self, X, y = None):
     self.fit(X, y)
-    return self.transform(X)
+    copy = self.transform(X)
+    return copy
 
 def find_random_state(features_df, labels, n=200):
   var = []  #collect test_error/train_error where error based on F1 score
