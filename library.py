@@ -17,6 +17,7 @@ from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_sc
 from sklearn.experimental import enable_halving_search_cv
 from sklearn.model_selection import HalvingGridSearchCV
 from sklearn.linear_model import LogisticRegressionCV
+from xgboost import XGBClassifier
 
 titanic_variance_based_split = 107
 customer_variance_based_split = 113
